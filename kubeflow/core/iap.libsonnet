@@ -251,6 +251,70 @@
     },  // deploy
     deploy:: deploy,
 
+    // Run the process to update the backend service
+    local backendUpdater = {
+      apiVersion: "extensions/v1beta1",
+      kind: "Deployment",
+      metadata: {
+        name: "backend-updater",
+        namespace: params.namespace,
+      },
+      spec: {
+        replicas: 1,
+        template: {
+          metadata: {
+            labels: {
+              service: "backend-updater",
+            },
+          },
+          spec: {
+            serviceAccountName: "envoy",
+            containers: [
+              {
+                name: "iap",
+                image: params.ingressSetupImage,
+                command: [
+                  "bash",
+                  "/var/envoy-config/update_backend.sh",
+                ],
+                env: [
+                  {
+                    name: "NAMESPACE",
+                    value: params.namespace,
+                  },
+                  {
+                    name: "SERVICE",
+                    value: "envoy",
+                  },
+                  {
+                    name: "GOOGLE_APPLICATION_CREDENTIALS",
+                    value: "/var/run/secrets/sa/admin-gcp-sa.json",
+                  },
+                ],
+                volumeMounts: [
+                  {
+                    name: "sa-key",
+                    readOnly: true,
+                    mountPath: "/var/run/secrets/sa",
+                  },
+                ],
+              },
+            ],
+            restartPolicy: "Always",
+            volumes: [
+              {
+                name: "sa-key",
+                secret: {
+                  secretName: "admin-gcp-sa",
+                },
+              },
+            ],
+          },
+        },
+      },
+    },  // backendUpdater
+    backendUpdater:: backendUpdater,
+
     // Run the process to enable iap
     local iapEnabler = {
       apiVersion: "extensions/v1beta1",
@@ -885,6 +949,7 @@
       self.initClusterRole,
       self.deploy,
       self.iapEnabler,
+      self.backendUpdater,
       self.configMap,
       self.whoamiService,
       self.whoamiApp,
