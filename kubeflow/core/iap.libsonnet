@@ -271,7 +271,7 @@
             serviceAccountName: "envoy",
             containers: [
               {
-                name: "iap",
+                name: "backend-updater",
                 image: params.ingressSetupImage,
                 command: [
                   "bash",
@@ -670,6 +670,7 @@
       data: {
         "envoy-config.json": std.manifestJson(envoyConfig(params)),
         "setup_backend.sh": importstr "setup_backend.sh",
+        "update_backend.sh": importstr "update_backend.sh",
         "configure_envoy_for_iap.sh": importstr "configure_envoy_for_iap.sh",
       },
     },
